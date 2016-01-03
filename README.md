@@ -59,7 +59,7 @@ var renderCubemap = require('gl-render-cubemap')
 #### `var canvases = renderCubemap(params)`
 
 Returns a set of canvas objects:
-```
+```js
 {
   pos: {
     x: canvas,
@@ -78,7 +78,7 @@ Returns a set of canvas objects:
 [gl-texture-cube](https://github.com/wwwtyro/gl-texture-cube).
 
 Takes an object `params`, which must contain the following fields:
-```
+```js
 {
   resolution: integer,
 
@@ -98,12 +98,12 @@ This should be a power of two in most cases.
 The `initialize` function is called by `renderCubemap` when it's ready for you to
 initialize your scene. It will be called with an object that contains:
 
-```
+```js
 {
-  gl: the gl context that will be used to render your scene,
-  fov: (float, radians) the field of view you should use in your projection matrix,
-  resolution: (integer) the resolution you provided to renderCubemap,
-  aspect: (float) the aspect ratio you should use in your projection matrix
+  gl: webgl context   // webgl context that will be used to render your scene
+  fov: float, radians // field of view you should use in your projection matrix
+  resolution: integer // resolution you provided to renderCubemap
+  aspect: float       // aspect ratio you should use in your projection matrix
 }
 ```
 
@@ -121,15 +121,15 @@ geometries, textures, etc.
 
 The `params` object contains the following fields:
 
-```
+```js
 {
-  gl: the gl context that will be used to render your scene,
-  fov: (float, radians) the field of view you should use in your projection matrix,
-  resolution: (integer) the resolution you provided to renderCubemap,
-  aspect: (float) the aspect ratio you should use in your projection matrix,
-  forward: (vec3) the direction you should set your view matrix to face,
-  up: (vec3) the up direction for your view matrix,
-  quad: (flat position array) a convenience geometry for rendering with raycasting techniques
+  gl: webgl context         // webgl context that will be used to render your scene
+  fov: float, radians       // field of view you should use in your projection matrix
+  resolution: integer       // resolution you provided to renderCubemap
+  aspect: float             // aspect ratio you should use in your projection matrix
+  forward: vec3             // direction you should set your view matrix to face
+  up: vec3                  // up direction for your view matrix
+  quad: flat position array // convenience geometry for rendering with raycasting techniques
 }
 ```
 
