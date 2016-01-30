@@ -9,36 +9,28 @@ var glslify = require('glslify')
 var createTextureCube = require('gl-texture-cube')
 var createSkybox = require('gl-skybox')
 
-var renderCubemap = require('../index.js')
+var CubemapRenderer = require('../index.js')
 
 window.onload = function () {
-  var canvases = renderCubemap({
-    resolution: 1024,
+  var cmr = new CubemapRenderer(1024)
 
-    initialize: function (params) {
-      return {
-        program: glShader(params.gl, glslify('./noise.vert'), glslify('./noise.frag'))
-      }
-    },
+  var program = glShader(cmr.gl, glslify('./noise.vert'), glslify('./noise.frag'))
 
-    render: function (params, data) {
-      var program = data.program
+  var canvases = cmr.render(function renderFace (params) {
+    var geometry = Geometry(cmr.gl)
+      .attr('aPosition', params.quad)
 
-      var geometry = Geometry(params.gl)
-        .attr('aPosition', params.quad)
+    var view = mat4.create()
+    mat4.lookAt(view, [0, 0, 0], params.forward, params.up)
 
-      var view = mat4.create()
-      mat4.lookAt(view, [0, 0, 0], params.forward, params.up)
+    var projection = mat4.create()
+    mat4.perspective(projection, params.fov, params.aspect, 0.01, 10.0)
 
-      var projection = mat4.create()
-      mat4.perspective(projection, params.fov, params.aspect, 0.01, 10.0)
-
-      program.bind()
-      geometry.bind(program)
-      program.uniforms.uView = view
-      program.uniforms.uProjection = projection
-      geometry.draw()
-    }
+    program.bind()
+    geometry.bind(program)
+    program.uniforms.uView = view
+    program.uniforms.uProjection = projection
+    geometry.draw()
   })
 
   var canvas = document.createElement('canvas')

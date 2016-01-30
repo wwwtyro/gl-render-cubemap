@@ -3,21 +3,19 @@
 var mat4 = require('gl-mat4')
 var tform = require('geo-3d-transform-mat4')
 
-module.exports = renderCubemap
+module.exports = CubemapRenderer
 
-function renderCubemap (opts) {
+function CubemapRenderer (resolution) {
   var canvas = document.createElement('canvas')
-  canvas.width = canvas.height = opts.resolution
-  var gl = canvas.getContext('webgl')
+  canvas.width = canvas.height = resolution
+
+  this.gl = canvas.getContext('webgl')
 
   var params = {
-    gl: gl,
     fov: Math.PI / 2,
-    resolution: opts.resolution,
+    resolution: resolution,
     aspect: 1
   }
-
-  var data = opts.initialize(params)
 
   var canvases = {
     pos: {},
@@ -33,7 +31,7 @@ function renderCubemap (opts) {
     for (var j = 0; j < axes.length; j++) {
       var axis = axes[j]
       var c = document.createElement('canvas')
-      c.width = c.height = opts.resolution
+      c.width = c.height = resolution
       c.ctx = c.getContext('2d')
       canvases[sign][axis] = c
     }
@@ -114,26 +112,27 @@ function renderCubemap (opts) {
 
   // Call the user's render function and store
   // the canvases.
-  for (i = 0; i < signs.length; i++) {
-    sign = signs[i]
-    for (j = 0; j < axes.length; j++) {
-      axis = axes[j]
-      var config = configs[sign][axis]
-      params.forward = config.forward
-      params.up = config.up
-      params.quad = config.quad
-      opts.render(params, data)
-      c = canvases[sign][axis]
-      // Rotate some of the canvases unintuitively
-      // to comply with WebGL's (Renderman's?)
-      // cubemap layout.
-      if (axis === 'x' || axis === 'z') {
-        c.ctx.translate(opts.resolution, opts.resolution)
-        c.ctx.rotate(Math.PI)
+  this.render = function (userRender) {
+    for (i = 0; i < signs.length; i++) {
+      sign = signs[i]
+      for (j = 0; j < axes.length; j++) {
+        axis = axes[j]
+        var config = configs[sign][axis]
+        params.forward = config.forward
+        params.up = config.up
+        params.quad = config.quad
+        userRender(params)
+        c = canvases[sign][axis]
+        // Rotate some of the canvases unintuitively
+        // to comply with WebGL's (Renderman's?)
+        // cubemap layout.
+        if (axis === 'x' || axis === 'z') {
+          c.ctx.translate(resolution, resolution)
+          c.ctx.rotate(Math.PI)
+        }
+        c.ctx.drawImage(canvas, 0, 0)
       }
-      c.ctx.drawImage(canvas, 0, 0)
     }
+    return canvases
   }
-
-  return canvases
 }

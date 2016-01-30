@@ -16,47 +16,56 @@ var Geometry = require('gl-geometry')
 var glShader = require('gl-shader')
 var glslify = require('glslify')
 var createTextureCube = require('gl-texture-cube')
-var renderCubemap = require('gl-render-cubemap')
+var CubemapRenderer = require('gl-render-cubemap')
 
-var canvases = renderCubemap({
-  resolution: 1024,
+var cmr = new CubemapRenderer(1024)
 
-  initialize: function (params) {
-    return {
-      program: glShader(params.gl, glslify('./noise.vert'), glslify('./noise.frag'))
-    }
-  },
+var program = glShader(cmr.gl, glslify('./noise.vert'), glslify('./noise.frag'))
 
-  render: function (params, data) {
-    var program = data.program
+var canvases = cmr.render(function renderFace(params) {
+  var geometry = Geometry(cmr.gl)
+    .attr('aPosition', params.quad)
 
-    var geometry = Geometry(params.gl)
-      .attr('aPosition', params.quad)
+  var view = mat4.create()
+  mat4.lookAt(view, [0, 0, 0], params.forward, params.up)
 
-    var view = mat4.create()
-    mat4.lookAt(view, [0, 0, 0], params.forward, params.up)
+  var projection = mat4.create()
+  mat4.perspective(projection, params.fov, params.aspect, 0.01, 10.0)
 
-    var projection = mat4.create()
-    mat4.perspective(projection, params.fov, params.aspect, 0.01, 10.0)
-
-    program.bind()
-    geometry.bind(program)
-    program.uniforms.uView = view
-    program.uniforms.uProjection = projection
-    geometry.draw()
-  }
+  program.bind()
+  geometry.bind(program)
+  program.uniforms.uView = view
+  program.uniforms.uProjection = projection
+  geometry.draw()
 })
 
 var cubemap = createTextureCube(gl, canvases)
 ```
 
+The general workflow is to:
+
+1. Create a CubemapRenderer object.
+2. Use the CubemapRenderer object's WebGL context to perform any needed
+   preparations for rendering.
+3. Call the CubemapRenderer object's `render` function with a function
+   that will render your scene.
+
 ## API
 
 ```js
-var renderCubemap = require('gl-render-cubemap')
+var CubemapRenderer = require('gl-render-cubemap')
 ```
 
-#### `var canvases = renderCubemap(params)`
+#### `var cmr = new CubemapRenderer(resolution)`
+
+Returns a CubemapRenderer object. This object has an attached `gl` field
+which should be used (independent of any non-cubemap rendering) to set up
+and render your cubemap.
+
+Takes an integer `resolution` which defines the resolution of each face
+of the cubemap.
+
+#### `var canvases = cmr.render(function renderScene() {...})`
 
 Returns a set of canvas objects:
 ```js
@@ -77,53 +86,14 @@ Returns a set of canvas objects:
 ...which can be immediately consumed by
 [gl-texture-cube](https://github.com/wwwtyro/gl-texture-cube).
 
-Takes an object `params`, which must contain the following fields:
-```js
-{
-  resolution: integer,
-
-  initialize: function (params) {
-    return {
-      programs, geometries, textures, etc.
-    }
-  },
-
-  render: function (params, data) {}
-}
-```
-
-The `resolution` parameter defines the resolution of each square face of your cubemap.
-This should be a power of two in most cases.
-
-The `initialize` function is called by `renderCubemap` when it's ready for you to
-initialize your scene. It will be called with an object that contains:
-
-```js
-{
-  gl: webgl context   // webgl context that will be used to render your scene
-  fov: float, radians // field of view you should use in your projection matrix
-  resolution: integer // resolution you provided to renderCubemap
-  aspect: float       // aspect ratio you should use in your projection matrix
-}
-```
-
-Use the `initialize` function to do all the setup for your scene, e.g., load
-`glsl` programs, create geometries, prepare textures, etc. When you're done,
-return all the state that you'll need for rendering your scene in an object.
-In the example above, we create a program and return it for use later in the
-`render` function.
-
-The `render` function is used to render your scene into the cubemap. It is called
-six times (once for each cubemap face) and is provided with a `params` and `data`
-object. The `data` object is what you returned from the `initialize` function, and
-so should contain all the objects you need to render your scene, like your programs,
-geometries, textures, etc.
+Takes a `renderScene` function that is used to render your scene into the cubemap.
+It is called six times (once for each cubemap face) and is provided with a `params`
+object.
 
 The `params` object contains the following fields:
 
 ```js
 {
-  gl: webgl context         // webgl context that will be used to render your scene
   fov: float, radians       // field of view you should use in your projection matrix
   resolution: integer       // resolution you provided to renderCubemap
   aspect: float             // aspect ratio you should use in your projection matrix
@@ -144,7 +114,7 @@ This pattern is used in the included starfield example:
 
 #### Javascript
 ```js
-render: function (params, data) {
+var canvases = cmr.render(function (params) {
   var geometry = Geometry(params.gl)
     .attr('aPosition', params.quad)
 
@@ -153,7 +123,7 @@ render: function (params, data) {
   program.uniforms.uView = view
   program.uniforms.uProjection = projection
   geometry.draw()
-}
+});
 ```
 
 #### Vertex Shader

@@ -1,6 +1,6 @@
 {
   "name": "gl-render-cubemap",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Renders a scene to a cubemap.",
   "main": "index.js",
   "scripts": {
